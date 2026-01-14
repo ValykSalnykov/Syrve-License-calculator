@@ -1,0 +1,5 @@
+{
+  "name": "Syrve License Calculator",
+  "description": "A calculator for Syrve licenses and additional orders based on the official pricing documentation.",
+  "requestFramePermissions": []
+}
