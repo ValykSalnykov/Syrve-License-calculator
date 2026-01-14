@@ -4,7 +4,7 @@
 
 # Syrve License Calculator
 
-Приложение на React/Vite для расчёта стоимости лицензий Syrve (Cloud/LT, планы PRO/Enterprise), дозакупки POS‑фронтов и дополнительных модулей. Подробное описание функционала см. в [PROJECT_DESCRIPTION.md](./PROJECT_DESCRIPTION.md).
+React/Vite application for calculating Syrve licensing costs (Cloud/LT, PRO/Enterprise) and selecting add-on modules. It also supports ordering extra POS fronts. Detailed functionality is described in [PROJECT_DESCRIPTION.md](./PROJECT_DESCRIPTION.md) (Russian).
 
 ## Run Locally
 
@@ -12,7 +12,7 @@
 
 
 1. Install dependencies:
-    `npm install`
+   `npm install`
 2. Run the app:
    `npm run dev`
 3. Build for production:
