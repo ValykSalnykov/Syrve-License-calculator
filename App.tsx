@@ -91,28 +91,36 @@ const App: React.FC = () => {
 
     // 1. Calculate Fronts Cost (Only for Cloud)
     if (!isLt && addedFronts > 0) {
-      let tempCurrent = currentFronts;
-      let frontsMonthly = 0;
-      let frontsSetup = 0;
-
-      for (let i = 0; i < addedFronts; i++) {
-        // Find pricing tier for current count (e.g., if I have 1, I look for row with currentCount: 1)
-        // If count is > 4, use the last tier logic (index 3, which is for currentCount 4+)
-        const tierIndex = Math.min(tempCurrent - 1, 3);
-        const tier = FRONT_PRICING_TABLE[tierIndex] || FRONT_PRICING_TABLE[FRONT_PRICING_TABLE.length - 1];
-
-        const cost = plan === PlanType.PRO ? tier.proMonthlyUah : tier.enterpriseMonthlyUah;
-        
-        frontsMonthly += cost;
-        frontsSetup += tier.setupUsd;
-        
-        // Increase temporary counter for next iteration
-        tempCurrent++;
+      const futureTotal = currentFronts + addedFronts;
+      
+      // LOGIC UPDATE: Unit price is determined by the Total Future Quantity.
+      // We find the tier that corresponds to the N-th license (where N = futureTotal)
+      // and apply that single price to ALL added licenses.
+      
+      // Tier Index Mapping:
+      // futureTotal = 2 (1->2) => Index 0 (Price 1055)
+      // futureTotal = 3 (1->3) => Index 1 (Price 1572)
+      // futureTotal = 4 (1->4) => Index 2 (Price 1389)
+      // futureTotal >= 5       => Index 3 (Price 1257)
+      
+      let tierIndex: number;
+      if (futureTotal >= 5) {
+        tierIndex = 3;
+      } else {
+        // Calculate index for counts 2, 3, 4
+        tierIndex = Math.max(0, futureTotal - 2);
       }
       
-      monthlyUah += frontsMonthly;
-      setupUsd += frontsSetup;
-      details.push(`Syrve POS (Front) x${addedFronts}: +${frontsMonthly} грн/міс (Впровадження: $${frontsSetup})`);
+      const tier = FRONT_PRICING_TABLE[tierIndex];
+      const cost = plan === PlanType.PRO ? tier.proMonthlyUah : tier.enterpriseMonthlyUah;
+      
+      const totalMonthly = cost * addedFronts;
+      const totalSetup = tier.setupUsd * addedFronts;
+      
+      monthlyUah += totalMonthly;
+      setupUsd += totalSetup;
+      details.push(`Syrve POS (Front) x${addedFronts}: +${totalMonthly} грн/міс (Впровадження: $${totalSetup})`);
+
     } else if (isLt && addedFronts > 0) {
        // Should not happen due to UI block, but safe guard
        details.push(`ПОПЕРЕДЖЕННЯ: Дозамовлення фронтів для LT не розраховується в цьому калькуляторі.`);
