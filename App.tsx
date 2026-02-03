@@ -1,6 +1,6 @@
 import React, { useState, useMemo, useEffect } from 'react';
-import { PlanType, DeploymentType, AddonLicense } from './types';
-import { FRONT_PRICING_TABLE, ADDON_LICENSES, FRONT_LICENSES_LIST } from './constants';
+import { PlanType, DeploymentType, AddonLicense, ServerLicenseResult } from './types';
+import { FRONT_PRICING_TABLE, ADDON_LICENSES, FRONT_LICENSES_LIST, TARGET_LICENSE_IDS } from './constants';
 import { LicenseRow } from './components/LicenseRow';
 
 // IDs for mobile/app licenses to separate them
@@ -47,6 +47,13 @@ const ChevronUpIcon = () => (
     </svg>
 );
 
+const SearchIcon = () => (
+  <svg xmlns="http://www.w3.org/2000/svg" width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <circle cx="11" cy="11" r="8"></circle>
+    <line x1="21" y1="21" x2="16.65" y2="16.65"></line>
+  </svg>
+);
+
 const App: React.FC = () => {
   // State
   const [plan, setPlan] = useState<PlanType>(PlanType.PRO);
@@ -56,6 +63,13 @@ const App: React.FC = () => {
   const [addonQuantities, setAddonQuantities] = useState<Record<string, number>>({});
   const [copied, setCopied] = useState(false);
   const [isFrontInfoOpen, setIsFrontInfoOpen] = useState(false);
+
+  // Server Check State
+  const [serverIp, setServerIp] = useState('792-659-996.syrve.online');
+  const [serverPort, setServerPort] = useState('');
+  const [isLoadingLicense, setIsLoadingLicense] = useState(false);
+  const [licenseResults, setLicenseResults] = useState<ServerLicenseResult[] | null>(null);
+  const [licenseError, setLicenseError] = useState<boolean>(false);
 
   // Logic: Reset added fronts if switched to LT
   useEffect(() => {
@@ -83,31 +97,138 @@ const App: React.FC = () => {
     setTimeout(() => setCopied(false), 2000);
   };
 
+  const processXml = (text: string) => {
+    try {
+      const parser = new DOMParser();
+      const xmlDoc = parser.parseFromString(text, "text/xml");
+
+      if (xmlDoc.getElementsByTagName("parsererror").length > 0) {
+        throw new Error("Invalid XML response from server");
+      }
+
+      const results: ServerLicenseResult[] = [];
+      const restrictionsContainer = xmlDoc.getElementsByTagName('restrictionsByModule')[0];
+
+      if (restrictionsContainer) {
+        const children = restrictionsContainer.childNodes;
+        let currentId = '';
+
+        for (let i = 0; i < children.length; i++) {
+          const node = children[i];
+          if (node.nodeName === 'k') {
+            currentId = node.textContent || '';
+          } else if (node.nodeName === 'v' && currentId) {
+            if (TARGET_LICENSE_IDS[currentId]) {
+              const name = TARGET_LICENSE_IDS[currentId];
+              const threshold = (node as Element).getElementsByTagName('threshold')[0];
+              
+              if (threshold) {
+                 const toDateNode = threshold.getElementsByTagName('to')[0];
+                 const countNode = threshold.getElementsByTagName('connectionsCount')[0];
+                 
+                 const count = countNode ? parseInt(countNode.textContent || '0', 10) : 0;
+                 const rawDate = toDateNode ? toDateNode.textContent || '' : '';
+                 
+                 let formattedDate = '-';
+                 if (rawDate) {
+                   try {
+                     const dateObj = new Date(rawDate);
+                     if (!isNaN(dateObj.getTime())) {
+                        formattedDate = dateObj.toLocaleDateString('uk-UA');
+                     }
+                   } catch (e) {}
+                 }
+
+                 results.push({
+                   id: currentId,
+                   name,
+                   count,
+                   expiration: formattedDate
+                 });
+              }
+            }
+            currentId = ''; // Reset
+          }
+        }
+      }
+      
+      results.sort((a, b) => Number(a.id) - Number(b.id));
+      setLicenseResults(results);
+      setLicenseError(false); // Clear error if successful parsing
+    } catch (e) {
+      console.error(e);
+      setLicenseError(true);
+    }
+  };
+
+  const checkServerLicenses = async () => {
+    setIsLoadingLicense(true);
+    setLicenseResults(null);
+    setLicenseError(false);
+
+    // Determines protocol based on port.
+    // If port is empty (default) OR '443', use HTTPS.
+    // Otherwise (e.g., 8080), use HTTP.
+    const protocol = (serverPort === '443' || !serverPort) ? 'https' : 'http';
+    const portPart = serverPort ? `:${serverPort}` : '';
+    const url = `${protocol}://${serverIp}${portPart}/resto/services/licensing?methodName=getLicensingState`;
+    
+    const body = `<?xml version="1.0" encoding="utf-8"?>
+<args>
+  <entities-version>110348838</entities-version>
+  <client-type>BACK</client-type>
+  <enable-warnings>false</enable-warnings>
+  <client-call-id>19d4cc95-d4d6-451f-bbe4-4b40b948c8e4</client-call-id>
+  <license-hash>-1</license-hash>
+  <restrictions-state-hash>-1</restrictions-state-hash>
+  <obtained-license-connections-ids />
+  <request-watchdog-check-results>false</request-watchdog-check-results>
+  <use-raw-entities>false</use-raw-entities>
+</args>`;
+
+    try {
+      const response = await fetch(url, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'text/xml',
+          'X-Resto-CorrelationId': '19d4cc95-d4d6-451f-bbe4-4b40b948c8e4',
+          'X-Resto-LoginName': 'login',
+          'X-Resto-PasswordHash': 'sha-1 password',
+          'X-Resto-BackVersion': '0',
+          'X-Resto-AuthType': 'BACK',
+          'X-Resto-ServerEdition': 'RMS',
+          'Accept-Language': 'ru'
+        },
+        body: body
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP Error: ${response.status}`);
+      }
+
+      const text = await response.text();
+      processXml(text);
+
+    } catch (err: any) {
+      console.error(err);
+      setLicenseError(true);
+    } finally {
+      setIsLoadingLicense(false);
+    }
+  };
+
   // Calculations
   const calculation = useMemo(() => {
     let monthlyUah = 0;
     let setupUsd = 0;
     const details: string[] = [];
 
-    // 1. Calculate Fronts Cost (Only for Cloud)
     if (!isLt && addedFronts > 0) {
       const futureTotal = currentFronts + addedFronts;
-      
-      // LOGIC UPDATE: Unit price is determined by the Total Future Quantity.
-      // We find the tier that corresponds to the N-th license (where N = futureTotal)
-      // and apply that single price to ALL added licenses.
-      
-      // Tier Index Mapping:
-      // futureTotal = 2 (1->2) => Index 0 (Price 1055)
-      // futureTotal = 3 (1->3) => Index 1 (Price 1572)
-      // futureTotal = 4 (1->4) => Index 2 (Price 1389)
-      // futureTotal >= 5       => Index 3 (Price 1257)
-      
       let tierIndex: number;
       if (futureTotal >= 5) {
         tierIndex = 3;
       } else {
-        // Calculate index for counts 2, 3, 4
         tierIndex = Math.max(0, futureTotal - 2);
       }
       
@@ -122,11 +243,9 @@ const App: React.FC = () => {
       details.push(`Syrve POS (Front) x${addedFronts}: +${totalMonthly} грн/міс (Впровадження: $${totalSetup})`);
 
     } else if (isLt && addedFronts > 0) {
-       // Should not happen due to UI block, but safe guard
        details.push(`ПОПЕРЕДЖЕННЯ: Дозамовлення фронтів для LT не розраховується в цьому калькуляторі.`);
     }
 
-    // 2. Calculate Addons Cost
     Object.entries(addonQuantities).forEach(([id, val]) => {
       const qty = val as number;
       if (qty > 0) {
@@ -134,8 +253,6 @@ const App: React.FC = () => {
         if (addon) {
           const itemMonthly = addon.monthlyUah * qty;
           const itemSetup = addon.setupUsd * qty;
-          
-          // Warning for LT regarding monthly prices
           const suffix = isLt ? ' (Ціна Cloud)' : '';
           
           monthlyUah += itemMonthly;
@@ -154,7 +271,6 @@ const App: React.FC = () => {
   }, [plan, currentFronts, addedFronts, addonQuantities, isLt]);
 
 
-  // Text Generation (Page 5 & 6 Template)
   const generateMessage = () => {
     const totalSetupStr = calculation.setupUsd > 0 ? `+${calculation.setupUsd}$` : '0$';
     
@@ -172,11 +288,9 @@ ${calculation.details.map(d => `- ${d}`).join('\n')}`;
 
   return (
     <div className="min-h-screen pb-24 lg:pb-12">
-      {/* Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-20 shadow-sm">
         <div className="max-w-[1600px] mx-auto px-4 py-4 flex items-center justify-between">
           <div className="flex items-center gap-3">
-             {/* Syrve Logo approximation with text */}
              <div className="flex flex-col">
                 <h1 className="text-2xl font-bold tracking-tight text-gray-900">
                    syrve <span className="text-red-600 text-base font-normal">calculator</span>
@@ -191,18 +305,62 @@ ${calculation.details.map(d => `- ${d}`).join('\n')}`;
       </header>
 
       <main className="max-w-[1920px] mx-auto px-4 py-6">
-        
-        {/* Main Grid System - 4 Columns on Large Screens */}
         <div className="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-4 gap-6 items-start">
           
-          {/* COLUMN 1: Settings & Fronts */}
           <div className="space-y-6">
-            {/* Section 1: Base Configuration */}
+            
+            <section className="bg-blue-50 rounded-xl shadow-sm p-6 border border-blue-200">
+              <h2 className="text-lg font-semibold text-blue-900 mb-4 border-b border-blue-200 pb-2 flex items-center gap-2">
+                <ServerIcon />
+                Перевірка ліцензій
+              </h2>
+              <div className="grid grid-cols-3 gap-3 mb-3">
+                <div className="col-span-2">
+                  <label className="block text-xs font-medium text-blue-800 mb-1">Адреса сервера</label>
+                  <input 
+                    type="text" 
+                    value={serverIp}
+                    onChange={(e) => setServerIp(e.target.value)}
+                    className="block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-xs p-2 border text-gray-900 bg-white"
+                    placeholder="127.0.0.1 або example.syrve.online"
+                  />
+                </div>
+                <div>
+                  <label className="block text-xs font-medium text-blue-800 mb-1">Порт (опц.)</label>
+                  <input 
+                    type="text" 
+                    value={serverPort}
+                    onChange={(e) => setServerPort(e.target.value)}
+                    className="block w-full rounded-md border-blue-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-xs p-2 border text-gray-900 bg-white"
+                    placeholder="8080"
+                  />
+                </div>
+              </div>
+              <button 
+                onClick={checkServerLicenses}
+                disabled={isLoadingLicense}
+                className="w-full flex items-center justify-center gap-2 py-2 px-4 bg-blue-600 hover:bg-blue-700 text-white rounded-md text-sm font-medium transition-colors shadow-sm disabled:opacity-70 disabled:cursor-wait"
+              >
+                {isLoadingLicense ? 'Завантаження...' : (
+                  <>
+                    <SearchIcon />
+                    Перевірити ліцензії
+                  </>
+                )}
+              </button>
+              
+              {licenseError && (
+                <div className="mt-4 p-3 bg-red-50 border border-red-200 text-red-900 text-xs rounded animate-in fade-in slide-in-from-top-2">
+                  <p className="font-bold mb-1">Помилка з'єднання</p>
+                  <p>Не вдалося отримати дані від сервера. Перевірте адресу, порт та налаштування CORS.</p>
+                </div>
+              )}
+            </section>
+
             <section className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
               <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">1. Налаштування</h2>
               
               <div className="space-y-6">
-                {/* Deployment Type Selector */}
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Тип розміщення</label>
                   <div className="flex bg-gray-100 p-1 rounded-lg">
@@ -238,7 +396,6 @@ ${calculation.details.map(d => `- ${d}`).join('\n')}`;
 
                 <hr className="border-gray-100" />
 
-                {/* Plan Selector */}
                 <div>
                   <label className={`block text-sm font-medium mb-2 ${isLt ? 'text-gray-400' : 'text-gray-700'}`}>
                     Тип підписки
@@ -282,7 +439,6 @@ ${calculation.details.map(d => `- ${d}`).join('\n')}`;
               </div>
             </section>
 
-            {/* Section 2: Add Fronts */}
             <section className={`bg-white rounded-xl shadow-sm p-6 border border-gray-100 transition-opacity ${isLt ? 'opacity-70' : ''}`}>
               <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2">2. Дозамовлення POS</h2>
               
@@ -317,7 +473,6 @@ ${calculation.details.map(d => `- ${d}`).join('\n')}`;
                 </div>
               )}
 
-              {/* Accordion / Spoiler for Front Licenses List - Moved BELOW counter */}
               <div className="border border-gray-200 rounded-lg overflow-hidden">
                 <button 
                   onClick={() => setIsFrontInfoOpen(!isFrontInfoOpen)}
@@ -351,7 +506,6 @@ ${calculation.details.map(d => `- ${d}`).join('\n')}`;
               </div>
             </section>
 
-             {/* Important Note Section */}
             <section className="bg-yellow-50 rounded-xl shadow-sm p-4 border border-yellow-200">
                <h3 className="text-xs font-bold text-yellow-800 uppercase tracking-wide mb-2 flex items-center gap-2">
                  <svg xmlns="http://www.w3.org/2000/svg" width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" strokeLinejoin="round"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"></path><line x1="12" y1="9" x2="12" y2="13"></line><line x1="12" y1="17" x2="12.01" y2="17"></line></svg>
@@ -375,11 +529,39 @@ ${calculation.details.map(d => `- ${d}`).join('\n')}`;
                  </div>
                </div>
             </section>
+
+            {licenseResults && (
+              <section className="bg-white rounded-xl shadow-lg border border-gray-200 overflow-hidden animate-in fade-in slide-in-from-top-4 duration-300">
+                <div className="bg-gray-50 px-4 py-3 border-b border-gray-200 flex justify-between items-center">
+                  <h3 className="text-sm font-bold text-gray-800">Результат перевірки</h3>
+                  <span className="text-[10px] bg-green-100 text-green-700 px-2 py-0.5 rounded-full">Online</span>
+                </div>
+                <div className="divide-y divide-gray-100">
+                  {licenseResults.length > 0 ? (
+                    licenseResults.map((lic) => (
+                      <div key={lic.id} className="px-4 py-3 flex justify-between items-center hover:bg-gray-50">
+                        <div>
+                          <p className="text-xs font-bold text-gray-800">{lic.name}</p>
+                          <p className="text-[10px] text-gray-400 mt-0.5">Діє до: {lic.expiration}</p>
+                        </div>
+                        <div className="flex items-center gap-2">
+                          <span className="bg-blue-100 text-blue-800 text-xs font-bold px-2 py-1 rounded-md min-w-[24px] text-center">
+                            {lic.count}
+                          </span>
+                        </div>
+                      </div>
+                    ))
+                  ) : (
+                    <div className="p-4 text-center text-xs text-gray-500">
+                      Не знайдено жодної ліцензії з цільового списку.
+                    </div>
+                  )}
+                </div>
+              </section>
+            )}
           </div>
 
-          {/* COLUMN 2: Mobile Apps */}
           <div className="space-y-6">
-              {/* Section 3: Mobile Apps */}
               <section className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2">
                    <span>3. Мобільні додатки</span>
@@ -400,9 +582,7 @@ ${calculation.details.map(d => `- ${d}`).join('\n')}`;
               </section>
           </div>
 
-          {/* COLUMN 3: Other Licenses */}
           <div className="space-y-6">
-              {/* Section 4: Other Licenses */}
               <section className="bg-white rounded-xl shadow-sm p-6 border border-gray-100">
                 <h2 className="text-lg font-semibold text-gray-800 mb-4 border-b pb-2 flex items-center gap-2">
                    <span>4. Інші ліцензії та інтеграції</span>
@@ -423,10 +603,8 @@ ${calculation.details.map(d => `- ${d}`).join('\n')}`;
               </section>
           </div>
 
-          {/* COLUMN 4: Results - Sticky */}
           <div className="relative">
              <div className="lg:sticky lg:top-24 space-y-4">
-                {/* Visual Summary Card */}
                 <div className="bg-white rounded-xl shadow-sm p-6 border border-gray-200">
                     <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wide mb-4">Разом до сплати</h3>
                     <div className="flex justify-between items-end mb-2 border-b border-dashed border-gray-200 pb-2">
@@ -439,7 +617,6 @@ ${calculation.details.map(d => `- ${d}`).join('\n')}`;
                     </div>
                 </div>
 
-                {/* Results Text Area */}
                 <section id="results-area" className="bg-gray-800 text-white rounded-xl shadow-lg p-6">
                   <div className="flex items-center justify-between mb-4">
                     <h2 className="text-lg font-semibold">Відповідь клієнту</h2>
@@ -465,7 +642,6 @@ ${calculation.details.map(d => `- ${d}`).join('\n')}`;
 
       </main>
 
-      {/* Floating Bottom Bar (Mobile Only) */}
       <div className="lg:hidden fixed bottom-0 left-0 right-0 bg-white border-t border-gray-200 shadow-[0_-4px_6px_-1px_rgba(0,0,0,0.1)] p-4 z-50">
         <div className="max-w-7xl mx-auto flex flex-col sm:flex-row sm:items-center justify-between gap-4">
           <div className="flex gap-8 justify-between w-full sm:w-auto">

@@ -1,3 +1,4 @@
+
 import { AddonLicense, FrontPricingTier, FrontLicenseInfo } from './types';
 
 // Data from Page 3 & 4: "4. Розрахунок вартості ліцензій Syrve POS (Front)"
@@ -202,3 +203,20 @@ export const ADDON_LICENSES: AddonLicense[] = [
     note: '2 станції'
   }
 ];
+
+// Mapping for Server License Checker
+export const TARGET_LICENSE_IDS: Record<string, string> = {
+  '100': 'RMS (Front Fast Food)',
+  '400': 'Delivery (Delivery)',
+  '1400': 'Delivery (Callcenter)',
+  '1200': 'RMS (Front SousChef)',
+  '800': 'RMS (Kitchen)',
+  '101': 'RMS (Front Table Service)',
+  '19007518': 'Waiter (Front)',
+  '2301': 'DeliveryManFiscal (Mobile)',
+  '2000060600': 'DashBoard (for RMS)',
+  '20038106': 'Dashboard Telegram Extension',
+  '19011701': 'API connector',
+  '2000': 'API (RestAPI)',
+  '21016318': 'FrontPaymentPlugin'
+};

@@ -1,3 +1,4 @@
+
 export enum PlanType {
   PRO = 'PRO',
   ENTERPRISE = 'ENTERPRISE'
@@ -41,4 +42,11 @@ export interface CalculationResult {
   monthlyIncreaseUah: number;
   oneTimeSetupUsd: number;
   details: string[];
+}
+
+export interface ServerLicenseResult {
+  id: string;
+  name: string;
+  count: number;
+  expiration: string;
 }
