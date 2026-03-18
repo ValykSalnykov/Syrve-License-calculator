@@ -1,222 +1,47 @@
-
 import { AddonLicense, FrontPricingTier, FrontLicenseInfo } from './types';
+import data from './data.json';
 
 // Data from Page 3 & 4: "4. Розрахунок вартості ліцензій Syrve POS (Front)"
-export const FRONT_PRICING_TABLE: FrontPricingTier[] = [
-  {
-    currentCount: 1, // Moving from 1 to 2
-    proMonthlyUah: 1055,
-    enterpriseMonthlyUah: 1389,
-    setupUsd: 150
-  },
-  {
-    currentCount: 2, // Moving from 2 to 3
-    proMonthlyUah: 1572,
-    enterpriseMonthlyUah: 2089,
-    setupUsd: 150
-  },
-  {
-    currentCount: 3, // Moving from 3 to 4
-    proMonthlyUah: 1389,
-    enterpriseMonthlyUah: 421, // Strictly from PDF Page 4 top row
-    setupUsd: 150
-  },
-  {
-    currentCount: 4, // Moving from 4 to 5+ (Logic handles 4 and greater using this row)
-    proMonthlyUah: 1257,
-    enterpriseMonthlyUah: 1672,
-    setupUsd: 150
-  }
-];
+export const FRONT_PRICING_TABLE: FrontPricingTier[] = data.frontPricingTable;
 
 // Data from Page 2: "2. Ліцензії Syrve, частина перша"
-export const FRONT_LICENSES_LIST: FrontLicenseInfo[] = [
-  {
-    name: 'RMS (Front Fast Food)',
-    module: 'Робота Syrve POS у режимі "Фаст-фуд"',
-    supplyCloud: 'дозамовлення по прайсу',
-    supplyLt: 'дозамовлення неможливе'
-  },
-  {
-    name: 'RMS (Front Table Service)',
-    module: 'Робота Syrve POS у режимі "Ресторан"',
-    supplyCloud: 'включена в підписку',
-    supplyLt: 'дозамовлення неможливе'
-  },
-  {
-    name: 'Delivery (Delivery)',
-    module: 'Робота Syrve POS у режимі "Ресторан"',
-    supplyCloud: 'включена в підписку',
-    supplyLt: 'дозамовлення неможливе'
-  },
-  {
-    name: 'Delivery (Callcenter)',
-    module: 'Робота у BackOffice з доставками у режимі "Call-Center"',
-    supplyCloud: 'дозамовлення по прайсу',
-    supplyLt: 'дозамовлення неможливе'
-  },
-  {
-    name: 'RMS (Front SousChef)',
-    module: 'Робота Syrve POS у режимі "Кухонний екран"',
-    supplyCloud: 'включена в підписку',
-    supplyLt: 'дозамовлення неможливе'
-  },
-  {
-    name: 'RMS (Kitchen)',
-    module: 'Робота Syrve POS у режимі "Документи"',
-    supplyCloud: 'включена в підписку',
-    supplyLt: 'дозамовлення неможливе'
-  }
-];
+export const FRONT_LICENSES_LIST: FrontLicenseInfo[] = data.frontLicensesList;
 
 // Data from Page 4 & 5: "5. Розрахунок вартості інших ліцензій Syrve"
 // Supply info taken from Table 3 (Page 3) and Table 5 asterisks (Page 5)
-export const ADDON_LICENSES: AddonLicense[] = [
-  {
-    id: 'waiter',
-    name: 'Waiter (Front)',
-    originalName: 'Syrve Waiter',
-    description: 'Мобільний термінал для офіціанта (Android/iOS). Прийом замовлень біля столика.',
-    supplyCloud: 'дозамовлення по прайсу',
-    supplyLt: 'дозамовлення по прайсу',
-    monthlyUah: 139,
-    setupUsd: 60,
-    isPerUser: true
-  },
-  {
-    id: 'driver',
-    name: 'DeliveryManFiscal (Mobile)',
-    originalName: 'Syrve Driver',
-    description: 'Додаток для кур’єрів. Навігація, статуси замовлень, прийом оплати.',
-    supplyCloud: 'дозамовлення по прайсу',
-    supplyLt: 'дозамовлення по прайсу',
-    monthlyUah: 149,
-    setupUsd: 60,
-    isPerUser: true
-  },
-  {
-    id: 'dashboard_rms',
-    name: 'DashBoard (for RMS)',
-    originalName: 'Syrve DashBoard*',
-    description: 'Аналітика в реальному часі на смартфоні керівника. (RMS версія).',
-    supplyCloud: 'дозамовлення по прайсу',
-    supplyLt: 'дозамовлення по прайсу',
-    monthlyUah: 139,
-    setupUsd: 60,
-    isPerUser: false,
-    note: 'Є різновиди цих ліцензій'
-  },
-  {
-    id: 'dashboard_tg',
-    name: 'Dashboard Telegram Extension',
-    originalName: 'Syrve DashBoard Telegram Extension',
-    description: 'Розширення для отримання звітності та аналітики через Telegram бот.',
-    supplyCloud: 'дозамовлення по прайсу',
-    supplyLt: 'дозамовлення по прайсу',
-    monthlyUah: 388,
-    setupUsd: 0,
-    isPerUser: true
-  },
-  {
-    id: 'connector_kiosk',
-    name: 'IntellectStyle.Plugin.Kiosk (Front)',
-    originalName: 'Connector for Intellect Style-Kiosk',
-    description: 'Конектор для підключення терміналів самообслуговування (Кіосків).',
-    supplyCloud: 'дозамовлення по прайсу', // Not in Table 3, assumes default pay
-    supplyLt: 'дозамовлення по прайсу',
-    monthlyUah: 455,
-    setupUsd: 0,
-    isPerUser: true
-  },
-  {
-    id: 'checkout',
-    name: 'RMS (CheckOut)',
-    originalName: 'CheckOut',
-    description: 'Спрощене робоче місце касира/фастфуду.',
-    supplyCloud: 'дозамовлення по прайсу', // Not in Table 3, assumes default pay
-    supplyLt: 'дозамовлення по прайсу',
-    monthlyUah: 139,
-    setupUsd: 0,
-    isPerUser: true
-  },
-  {
-    id: 'api_front',
-    name: 'API connector',
-    originalName: 'API Front',
-    description: 'Ліцензія для інтеграції з касовим терміналом (локальні інтеграції).',
-    supplyCloud: 'включена в підписку',
-    supplyLt: 'дозамовлення по прайсу',
-    monthlyUah: 149,
-    setupUsd: 0,
-    isPerUser: false, 
-    note: '10 користувачів'
-  },
-  {
-    id: 'api_rest',
-    name: 'API (RestAPI)',
-    originalName: 'API Cloud',
-    description: 'Хмарний API для інтеграції з сайтами, агрегаторами та додатками.',
-    supplyCloud: 'включена в підписку',
-    supplyLt: 'дозамовлення по прайсу',
-    monthlyUah: 149,
-    setupUsd: 0,
-    isPerUser: false, 
-    note: '10 користувачів'
-  },
-  {
-    id: 'api_payment',
-    name: 'FrontPaymentPlugin',
-    originalName: 'API Payment',
-    description: 'Для підключення банківських терміналів та платіжних систем.',
-    supplyCloud: 'включена в підписку',
-    supplyLt: 'дозамовлення по прайсу',
-    monthlyUah: 149,
-    setupUsd: 0,
-    isPerUser: false, 
-    note: '10 користувачів'
-  },
-  {
-    id: 'loyalty_pro',
-    name: 'Card5 (Front)',
-    originalName: 'Loyalty (PRO)',
-    description: 'Базова бонусна система. Управління гостями та картками.',
-    supplyCloud: 'включена в підписку (PRO)',
-    supplyLt: 'дозамовлення по прайсу',
-    monthlyUah: 834,
-    setupUsd: 200, 
-    setupIsFrom: true,
-    isPerUser: false, 
-    note: '2 станції'
-  },
-  {
-    id: 'loyalty_ent',
-    name: 'Card5CallCenter',
-    originalName: 'Loyalty (Enterprise)',
-    description: 'Розширена лояльність + модуль Колл-центру для служби доставки.',
-    supplyCloud: 'включена в підписку (Enterprise)',
-    supplyLt: 'дозамовлення по прайсу',
-    monthlyUah: 1792,
-    setupUsd: 200, 
-    setupIsFrom: true,
-    isPerUser: false, 
-    requiresEnterprise: true,
-    note: '2 станції'
-  }
-];
+export const ADDON_LICENSES: AddonLicense[] = data.addonLicenses;
 
-// Mapping for Server License Checker
-export const TARGET_LICENSE_IDS: Record<string, string> = {
-  '100': 'RMS (Front Fast Food)',
-  '400': 'Delivery (Delivery)',
-  '1400': 'Delivery (Callcenter)',
-  '1200': 'RMS (Front SousChef)',
-  '800': 'RMS (Kitchen)',
-  '101': 'RMS (Front Table Service)',
-  '19007518': 'Waiter (Front)',
-  '2301': 'DeliveryManFiscal (Mobile)',
-  '2000060600': 'DashBoard (for RMS)',
-  '20038106': 'Dashboard Telegram Extension',
-  '19011701': 'API connector',
-  '2000': 'API (RestAPI)',
-  '21016318': 'FrontPaymentPlugin'
+export const PROXY_URL = "https://fetching-115008000441.europe-west1.run.app/proxy";
+export const PROXY_AUTH_TOKEN = "eyJhbGciOiJSUzI1NiIsImtpZCI6Ijg2MzBhNzFiZDZlYzFjNjEyNTdhMjdmZjJlZmQ5MTg3MmVjYWIxZjYiLCJ0eXAiOiJKV1QifQ.eyJpc3MiOiJhY2NvdW50cy5nb29nbGUuY29tIiwiYXpwIjoiNjE4MTA0NzA4MDU0LTlyOXMxYzRhbGczNmVybGl1Y2hvOXQ1Mm4zMm42ZGdxLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwiYXVkIjoiNjE4MTA0NzA4MDU0LTlyOXMxYzRhbGczNmVybGl1Y2hvOXQ1Mm4zMm42ZGdxLmFwcHMuZ29vZ2xldXNlcmNvbnRlbnQuY29tIiwic3ViIjoiMTE2ODAzMzAyOTEwMTE2MzM2MTU1IiwiZW1haWwiOiJodW1lcjIzQGdtYWlsLmNvbSIsImVtYWlsX3ZlcmlmaWVkIjp0cnVlLCJhdF9oYXNoIjoibzRKOFhQU1p3VlpvVk1tRUIyYTlQZyIsIm5iZiI6MTc3MDIxNjkyOCwiaWF0IjoxNzcwMjE3MjI4LCJleHAiOjE3NzAyMjA4MjgsImp0aSI6ImY5NTQ4MmQ3NGRjYWE2MDUwY2YzYzkwMWQ5ZWZjYzFhYzY5MzZlMWQifQ.NHiIX5unkkyVw_X_AoLOM77o52b8DO5PD-lCyHUdD7jabApVnh7ngp7KQOce_WLQcN8TGRHsTc_4XEBqamIt8axI26vaIscbyg66LmPwsyNLlR4_UYEKj4pLAeutroWaWtt9u_KIvULhlYzZaKFC7FFJumnPzbfytg6tcjq4kUHQ26cYsNOg_9ILxkhauOdfdDEDMnD5VldeOVQ-zHVUXBfIE06VcOE5IfEDBnzyw_DaLebd_3gZqXyeGv9YxcqObjcJcLYnWgI8eKtVfCQtu_SUzCp5c4uBS1NNDT58GgAGvpP9cNtgJCVnIvYerSICOddhP_uNYCtYv0bGu3hYQQ";
+export const SYRVE_AUTH_TOKEN = "Bearer eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJBcGlMb2dpbklkIjoiMTVhOGQwZWEtNjgwNS00NWJkLTg3MjUtY2JjM2E1YjFmZWVmIiwibmJmIjoxNzcyNjIzNzA1LCJleHAiOjE3NzI2MjczMDUsImlhdCI6MTc3MjYyMzcwNSwiaXNzIjoiU3lydmUiLCJhdWQiOiJjbGllbnRzIn0.SIND5A4UKFu4ra9peopD-3rVtQTuZB6emOogOElTxqA";
+
+export const LICENSE_NAMES: Record<string, string> = {
+    '100': 'RMS (Front Fast Food)',
+    '101': 'RMS (Front Table Service)',
+    '400': 'Delivery (Delivery)',
+    '1400': 'Delivery (Callcenter)',
+    '1200': 'RMS (Front SousChef)',
+    '800': 'RMS (Kitchen)',
+    '19007518': 'Waiter (Front)',
+    '2301': 'DeliveryManFiscal (Mobile)',
+    '2000060600': 'DashBoard (for RMS)',
+    '20038106': 'Syrve DashBoard Telegram Extension',
+    '19011701': 'API connector',
+    '2000': 'API (RestAPI)',
+    '21016318': 'FrontPaymentPlugin',
+    '21011218': 'Card5 (Front)',
+    '21011219': 'Card5CallCenter',
+    '2000140600': 'Dashboard (Dashboard Chain 5 rest)',
+    '2000150600': 'Dashboard (Dashboard Chain 10 rest)',
+    '2000160600': 'Dashboard (Dashboard Chain 50 rest)'
+};
+
+export const SYRVE_COMMON_HEADERS = {
+    'Content-Type': 'text/xml',
+    'Accept-Language': 'ru',
+    'X-Resto-CorrelationId': '19d4cc95-d4d6-451f-bbe4-4b40b948c8e4',
+    'X-Resto-BackVersion': '0',
+    'X-Resto-AuthType': 'BACK',
+    'X-Resto-ServerEdition': 'RMS',
+    'Authorization': SYRVE_AUTH_TOKEN
 };

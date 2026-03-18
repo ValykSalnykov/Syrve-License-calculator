@@ -1,4 +1,3 @@
-
 export enum PlanType {
   PRO = 'PRO',
   ENTERPRISE = 'ENTERPRISE'
@@ -44,9 +43,29 @@ export interface CalculationResult {
   details: string[];
 }
 
-export interface ServerLicenseResult {
-  id: string;
-  name: string;
-  count: number;
-  expiration: string;
+export interface ServerConfig {
+    host: string;
+    port: string;
+    login: string;
+    passwordHash: string;
+}
+
+export interface LicenseData {
+    id: string;
+    name: string;
+    count: number;
+    validUntil: string | null;
+    isNew?: boolean;
+    countDiff?: number;
+    isDateChanged?: boolean;
+    oldValidUntil?: string | null;
+}
+
+export interface CheckLicenseResponse {
+    licenses: LicenseData[];
+    serialNumber: string | null;
+    licenseStatus: string | null;
+    companyName: string | null;
+    crmId: string | null;
+    serverType: string | null;
 }

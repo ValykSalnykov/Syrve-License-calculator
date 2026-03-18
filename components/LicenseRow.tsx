@@ -26,13 +26,13 @@ export const LicenseRow: React.FC<LicenseRowProps> = ({ addon, quantity, deploym
   const supplyColorClass = isIncluded ? 'text-green-600 font-medium' : 'text-gray-500';
 
   return (
-    <div className="flex items-center justify-between p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:border-red-300 transition-colors">
-      <div className="flex-1 min-w-0 pr-4">
+    <div className="flex flex-col p-4 bg-white border border-gray-200 rounded-lg shadow-sm hover:border-red-300 transition-colors">
+      <div className="w-full mb-3">
         <div className="flex items-center gap-2 mb-0.5">
-          <h4 className="font-semibold text-gray-800 truncate" title={addon.originalName}>{addon.originalName}</h4>
+          <h4 className="font-semibold text-gray-800 break-words" title={addon.originalName}>{addon.originalName}</h4>
           
           {addon.description && (
-            <div className="group relative">
+            <div className="group relative shrink-0">
               <InfoIcon />
               <div className="absolute left-1/2 bottom-full mb-2 -translate-x-1/2 w-64 p-2 bg-gray-900 text-white text-xs rounded shadow-lg opacity-0 invisible group-hover:opacity-100 group-hover:visible transition-all z-50 pointer-events-none">
                 {addon.description}
@@ -42,7 +42,7 @@ export const LicenseRow: React.FC<LicenseRowProps> = ({ addon, quantity, deploym
           )}
         </div>
 
-        <p className="text-sm text-gray-500 truncate">{addon.name}</p>
+        <p className="text-sm text-gray-500 break-words">{addon.name}</p>
         
         {/* Dynamic Supply Info */}
         <p className={`text-xs mt-1 ${supplyColorClass}`}>
@@ -50,7 +50,7 @@ export const LicenseRow: React.FC<LicenseRowProps> = ({ addon, quantity, deploym
           {supplyText}
         </p>
 
-        <div className="text-xs text-gray-400 mt-1 flex flex-wrap gap-2">
+        <div className="text-xs text-gray-400 mt-2 flex flex-wrap gap-2">
           <span className="whitespace-nowrap">{addon.monthlyUah} грн/міс</span>
           <span>•</span>
           <span className="whitespace-nowrap">Впровадження: {addon.setupUsd > 0 ? `${addon.setupIsFrom ? 'від ' : ''}$${addon.setupUsd}` : 'Безкоштовно'}</span>
@@ -63,7 +63,8 @@ export const LicenseRow: React.FC<LicenseRowProps> = ({ addon, quantity, deploym
         </div>
       </div>
       
-      <div className="flex items-center gap-3 shrink-0">
+      <div className="flex items-center justify-end gap-3 pt-3 border-t border-gray-100 mt-auto">
+        <span className="text-xs text-gray-500 mr-auto font-medium uppercase tracking-wide">Кількість</span>
         <button 
           onClick={() => onChange(Math.max(0, quantity - 1))}
           className="w-8 h-8 flex items-center justify-center rounded-full bg-gray-100 text-gray-600 hover:bg-gray-200 transition-colors font-bold"
